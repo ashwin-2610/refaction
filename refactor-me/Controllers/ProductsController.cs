@@ -1,35 +1,43 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Web.Http;
+using refactor_me.Helpers;
 using refactor_me.Models;
+using refactor_me.Repositories;
 
 namespace refactor_me.Controllers
 {
     [RoutePrefix("products")]
     public class ProductsController : ApiController
     {
+        private ProductRepository productRepository { get; set; }
+
         [Route]
         [HttpGet]
-        public Products GetAll()
+        public List<Product> GetAll()
         {
-            return new Products();
+            productRepository = Helper.GetProductRepository();
+            var products = productRepository.GetProducts(null);
+            return products;
         }
 
         [Route]
         [HttpGet]
-        public Products SearchByName(string name)
+        public List<Product> SearchByName(string name)
         {
-            return new Products(name);
+            productRepository = Helper.GetProductRepository();
+            var products = productRepository.GetProducts(name);
+            return products;
         }
 
         [Route("{id}")]
         [HttpGet]
         public Product GetProduct(Guid id)
         {
-            var product = new Product(id);
-            if (product.IsNew)
-                throw new HttpResponseException(HttpStatusCode.NotFound);
-
+            productRepository = Helper.GetProductRepository();
+            var product = productRepository.GetProduct(id);
             return product;
         }
 
@@ -37,49 +45,48 @@ namespace refactor_me.Controllers
         [HttpPost]
         public void Create(Product product)
         {
-            product.Save();
+            productRepository = Helper.GetProductRepository();
+            productRepository.AddProduct(product);
         }
 
-        [Route("{id}")]
+        [Route]
         [HttpPut]
-        public void Update(Guid id, Product product)
+        public void Update(Product product)
         {
-            var orig = new Product(id)
-            {
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                DeliveryPrice = product.DeliveryPrice
-            };
-
-            if (!orig.IsNew)
-                orig.Save();
+            productRepository = Helper.GetProductRepository();
+            productRepository.UpdateProduct(product);
         }
 
         [Route("{id}")]
         [HttpDelete]
         public void Delete(Guid id)
         {
-            var product = new Product(id);
-            product.Delete();
+            productRepository = Helper.GetProductRepository();
+            productRepository.DeleteProduct(id);
         }
 
         [Route("{productId}/options")]
         [HttpGet]
-        public ProductOptions GetOptions(Guid productId)
+        public List<ProductOption> GetOptions(Guid productId)
         {
-            return new ProductOptions(productId);
+            productRepository = Helper.GetProductRepository();
+            var productOptions = productRepository.GetProductOptions(productId);
+            return productOptions;
         }
 
         [Route("{productId}/options/{id}")]
         [HttpGet]
         public ProductOption GetOption(Guid productId, Guid id)
         {
-            var option = new ProductOption(id);
-            if (option.IsNew)
-                throw new HttpResponseException(HttpStatusCode.NotFound);
+            productRepository = Helper.GetProductRepository();
+            var options = productRepository.GetProductOptions(id);
 
-            return option;
+            if (options.Any())
+            {
+                return options.First();
+            }
+
+            return null;
         }
 
         [Route("{productId}/options")]
@@ -87,29 +94,24 @@ namespace refactor_me.Controllers
         public void CreateOption(Guid productId, ProductOption option)
         {
             option.ProductId = productId;
-            option.Save();
+            productRepository = Helper.GetProductRepository();
+            productRepository.AddProductOption(option);
         }
 
-        [Route("{productId}/options/{id}")]
+        [Route]
         [HttpPut]
         public void UpdateOption(Guid id, ProductOption option)
         {
-            var orig = new ProductOption(id)
-            {
-                Name = option.Name,
-                Description = option.Description
-            };
-
-            if (!orig.IsNew)
-                orig.Save();
+            productRepository = Helper.GetProductRepository();
+            productRepository.UpdateProductOption(option);
         }
 
-        [Route("{productId}/options/{id}")]
+        [Route]
         [HttpDelete]
         public void DeleteOption(Guid id)
         {
-            var opt = new ProductOption(id);
-            opt.Delete();
+            productRepository = Helper.GetProductRepository();
+            productRepository.DeleteProductOption(id);
         }
     }
 }
